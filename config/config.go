@@ -3,6 +3,7 @@ package config
 import (
 	"crypto/tls"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 )
@@ -31,6 +32,7 @@ type Config struct {
 	targetMap    map[string]bool
 	CertFile     string
 	CertKeyFile  string
+	KeyLogFile   string
 	Exec         string
 	FromPort     int
 }
@@ -119,7 +121,7 @@ func (c *Config) TLSConfig() (*tls.Config, error) {
 
 	config := tls.Config{
 		InsecureSkipVerify: c.Insecure,
-		CipherSuites: c.GetCiphersuites(),
+		CipherSuites:       c.GetCiphersuites(),
 	}
 
 	if config.NextProtos == nil {
@@ -132,6 +134,14 @@ func (c *Config) TLSConfig() (*tls.Config, error) {
 			return nil, err
 		}
 		config.Certificates = []tls.Certificate{cert}
+	}
+
+	if c.KeyLogFile != "" {
+		w, err := os.OpenFile(c.KeyLogFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+		if err != nil {
+			return nil, err
+		}
+		config.KeyLogWriter = w
 	}
 
 	return &config, nil
